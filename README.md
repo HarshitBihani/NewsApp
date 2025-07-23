@@ -15,7 +15,7 @@ To use the News App:
 
 ### Dashboard Overview
 
-![Dashboard Image 1](https://placehold.co/800x500/007bff/ffffff?text=News+App+Screenshot+1)
+![Dashboard Image 1](https://github.com/HarshitBihani/NewsApp/blob/master/DB1.png)
 *A general view of the main dashboard, showing the latest headlines.*
 
 ![Dashboard Image 2](https://placehold.co/800x500/28a745/ffffff?ffffff?text=News+App+Screenshot+2)
