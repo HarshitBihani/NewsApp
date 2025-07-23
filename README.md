@@ -14,14 +14,14 @@ To use the News App:
 * **Browse News:** Once opened, the application will load, and you can start browsing through different news categories and click on articles to read the full content.
 
 ### Dashboard Overview
-[
+
 ![Dashboard Image 1](https://github.com/HarshitBihani/NewsApp/blob/master/DB1.png)
-*A general view of the main dashboard, showing the latest headlines.*
+**A general view of the main dashboard, showing the latest headlines.**
 
 ![Dashboard Image 2](https://github.com/HarshitBihani/NewsApp/blob/master/DB2.png)
-*Another view of the dashboard, showing a different page.*
+**Another view of the dashboard, showing a different page.**
 
 ![Dashboard Image 3](https://github.com/HarshitBihani/NewsApp/blob/master/DB3.png)
-*A screenshot highlighting  search functionality.*
+**A screenshot highlighting  search functionality.**
 
 
