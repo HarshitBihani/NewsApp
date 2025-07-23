@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Global News Hub</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"/>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(to right, #f9f9f9, #e6f0ff);
+      color: #343a40;
+    }
+
+    .navbar {
+      background-color: #fff;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, .05);
+    }
+
+    .navbar-brand {
+      font-weight: 700;
+      color: #007bff !important;
+    }
+
+    .news-card {
+      border: none;
+      border-radius: 0.75rem;
+      overflow: hidden;
+      box-shadow: 0 0.5rem 1rem rgba(0,0,0,.075);
+      transition: transform 0.2s ease-in-out;
+    }
+
+    .news-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .news-card img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+    }
+
+    .pagination-controls {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 1.5rem;
+    }
+
+    .message-box {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 12px 20px;
+      background-color: #dc3545;
+      color: white;
+      border-radius: 6px;
+      display: none;
+      z-index: 999;
+    }
+
+    .navbar-nav .nav-link.active {
+      font-weight: 600;
+      border-bottom: 2px solid #007bff;
+    }
+
+    #pageIndicator {
+      text-align: center;
+      font-weight: 600;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="messageBox" class="message-box"></div>
+
+<nav class="navbar navbar-expand-lg navbar-light">
+  <div class="container">
+    <a class="navbar-brand" href="#">News Hub</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav me-auto" id="categoryTabs">
+        <li class="nav-item"><a class="nav-link active" href="#" data-category="world OR global politics OR international affairs">Home</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" data-category="cricket OR football OR sports OR Olympics OR FIFA">Sports</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" data-category="movies OR web series OR entertainment OR streaming">Entertainment</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" data-category="technology OR gadgets OR AI OR Apple OR Samsung">Technology</a></li>
+      </ul>
+      <div class="d-flex">
+        <input class="form-control me-2" id="searchInput" placeholder="Search news...">
+        <button class="btn btn-primary" id="searchButton">Search</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="container my-4">
+  <p id="pageIndicator">Page 1</p>
+  <div id="newsContainer" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4"></div>
+
+  <div class="pagination-controls">
+    <button class="btn btn-primary" id="prevPageBtn" disabled>Previous</button>
+    <button class="btn btn-primary" id="nextPageBtn">Next</button>
+  </div>
+</div>
+
+<script>
+const API_KEY = '768f855d13114253939f56788eaa2377'; 
+const PAGE_SIZE = 9;
+let currentPage = 1;
+let currentQuery = 'world';
+let totalResults = 0;
+const cache = new Map();
+
+const messageBox = document.getElementById('messageBox');
+const pageIndicator = document.getElementById('pageIndicator');
+const newsContainer = document.getElementById('newsContainer');
+const searchInput = document.getElementById('searchInput');
+const searchButton = document.getElementById('searchButton');
+const prevPageBtn = document.getElementById('prevPageBtn');
+const nextPageBtn = document.getElementById('nextPageBtn');
+const categoryTabs = document.getElementById('categoryTabs');
+
+function showMessage(msg, type = 'error') {
+  messageBox.textContent = msg;
+  messageBox.style.display = 'block';
+  messageBox.style.backgroundColor = type === 'error' ? '#dc3545' : '#007bff';
+  setTimeout(() => {
+    messageBox.style.display = 'none';
+  }, 3000);
+}
+
+function updatePaginationButtons() {
+  pageIndicator.textContent = `Page ${currentPage}`;
+  prevPageBtn.disabled = currentPage === 1;
+  nextPageBtn.disabled = currentPage * PAGE_SIZE >= totalResults;
+}
+
+function displayArticles(articles) {
+  newsContainer.innerHTML = '';
+  if (articles.length === 0) {
+    newsContainer.innerHTML = '<p class="text-center">No articles found.</p>';
+    return;
+  }
+  for (let article of articles) {
+    const col = document.createElement('div');
+    col.className = 'col';
+    col.innerHTML = `
+      <div class="card news-card">
+        <img src="${article.urlToImage}" onerror="this.src='https://placehold.co/600x400?text=Image+Missing'" />
+        <div class="card-body">
+          <h5 class="card-title">${article.title}</h5>
+          <p class="card-text">${article.description ? article.description.slice(0, 150) + '...' : 'No description available'}</p>
+        </div>
+        <div class="card-footer d-flex justify-content-between align-items-center">
+          <span>${article.source.name}</span>
+          <a href="${article.url}" target="_blank" class="btn btn-sm btn-primary">Read More</a>
+        </div>
+      </div>
+    `;
+    newsContainer.appendChild(col);
+  }
+}
+
+async function fetchNews(query, pageNum = 1) {
+  const cacheKey = `${query}-${pageNum}`;
+  if (cache.has(cacheKey)) {
+    displayArticles(cache.get(cacheKey));
+    updatePaginationButtons();
+    return;
+  }
+
+  newsContainer.innerHTML = '<div class="text-center"><div class="spinner-border text-primary"></div><p>Loading news...</p></div>';
+
+  const encodedQuery = encodeURIComponent(query);
+  const baseURL = 'https://newsapi.org/v2/everything';
+  const commonParams = `q=${encodedQuery}&language=en&pageSize=15&page=${pageNum}&excludeDomains=etfdailynews.com,biztoc.com,thefly.com,globenewswire.com&apiKey=${API_KEY}`;
+
+  const urlLatest = `${baseURL}?${commonParams}&sortBy=publishedAt`;
+  const urlRelevant = `${baseURL}?${commonParams}&sortBy=relevancy`;
+
+  try {
+    const [resLatest, resRelevant] = await Promise.all([
+      fetch(urlLatest).then(r => r.json()),
+      fetch(urlRelevant).then(r => r.json())
+    ]);
+
+    if (resLatest.status === "ok" && resRelevant.status === "ok") {
+      totalResults = Math.max(resLatest.totalResults, resRelevant.totalResults);
+      const combined = [...resLatest.articles, ...resRelevant.articles];
+      const deduped = [];
+      const seen = new Set();
+      for (let article of combined) {
+        if (article.urlToImage && !seen.has(article.url)) {
+          deduped.push(article);
+          seen.add(article.url);
+        }
+        if (deduped.length === PAGE_SIZE) break;
+      }
+
+      if (deduped.length > 0) {
+        cache.set(cacheKey, deduped);
+        displayArticles(deduped);
+      } else {
+        showMessage("No news articles found", "error");
+        newsContainer.innerHTML = '<p class="text-center">No news found</p>';
+      }
+    } else {
+      throw new Error("NewsAPI Error");
+    }
+  } catch (err) {
+    showMessage("An error occurred while fetching news", 'error');
+    newsContainer.innerHTML = "<p class='text-center text-danger'>Something went wrong.</p>";
+  }
+
+  updatePaginationButtons();
+}
+
+
+searchButton.addEventListener('click', () => {
+  const val = searchInput.value.trim();
+  if (!val) return showMessage('Please enter a search term.');
+  currentQuery = val;
+  currentPage = 1;
+  document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+  fetchNews(currentQuery, currentPage);
+});
+
+prevPageBtn.addEventListener('click', () => {
+  if (currentPage > 1) {
+    currentPage--;
+    fetchNews(currentQuery, currentPage);
+  }
+});
+
+nextPageBtn.addEventListener('click', () => {
+  currentPage++;
+  fetchNews(currentQuery, currentPage);
+});
+
+categoryTabs.addEventListener('click', e => {
+  if (e.target.tagName === 'A') {
+    e.preventDefault();
+    document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+    e.target.classList.add('active');
+    currentQuery = e.target.dataset.category;
+    currentPage = 1;
+    fetchNews(currentQuery, currentPage);
+  }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  fetchNews(currentQuery, currentPage);
+});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
