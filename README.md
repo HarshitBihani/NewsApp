@@ -1,4 +1,4 @@
-# News App
+# News Hub
 
 This news application allows users to browse the latest news articles from various sources. It provides a clean and intuitive interface to stay updated with current events.
 
